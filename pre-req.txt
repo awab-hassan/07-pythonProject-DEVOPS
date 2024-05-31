@@ -1,0 +1,5 @@
+apt update -y
+apt install awscli -y
+apt install pip -y
+pip install boto3
+add creds in py file

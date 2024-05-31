@@ -1,0 +1,18 @@
+{
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "family": "any_family_name_for_task",
+    "containerDefinitions": [
+        {
+            "name": "ddd",
+            "image": "your_image_url_in_ecr_repository",
+            "essential": true,
+            "privileged": true
+        }
+    ],
+    "volumes": [],
+    "memory": "3 GB",
+    "cpu": "1 vCPU",
+    "executionRoleArn": "your_ecs_role_arn"
+}

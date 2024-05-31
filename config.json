@@ -1,0 +1,12 @@
+{
+"channel1": {
+    "token": "YOUR_DISCORD_TOKEN",
+    "channel_id": "CHANNEL_ID",
+    "TIMESTAMP": ""
+  },
+  "channel2": {
+    "token": "YOUR_DISCORD_TOKEN",
+    "channel_id": "CHANNEL_ID",
+    "TIMESTAMP": ""
+  }
+}

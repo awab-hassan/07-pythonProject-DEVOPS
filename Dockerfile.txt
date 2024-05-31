@@ -1,0 +1,73 @@
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
+
+user root
+# set version label
+ARG BUILD_DATE
+ARG KASM_VERSION
+ARG VERSION
+LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+LABEL maintainer="thelamer"
+
+# Env
+ENV DOCKER_TLS_CERTDIR=""
+ENV TINI_SUBREAPER=true
+
+#Add needed nvidia environment variables for https://github.com/NVIDIA/nvidia-docker
+ENV NVIDIA_DRIVER_CAPABILITIES="compute,graphics,video,utility" \
+    VERSION="develop"
+
+# Container setup
+RUN \
+  echo "**** install packages ****" && \
+  apt-get install -y --no-install-recommends \
+    btrfs-progs \
+    containerd.io \
+    docker-ce \
+    docker-ce-cli \
+    python3 \
+    sudo \
+    cron && \
+  echo "**** compose install ****" && \
+  mkdir -p /usr/local/lib/docker/cli-plugins && \
+  curl -L \
+    https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-$(uname -s)-$(uname -m) -o \
+    /usr/local/lib/docker/cli-plugins/docker-compose && \
+  chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
+  echo "**** dind setup ****" && \
+  useradd -U dockremap && \
+  usermod -G dockremap dockremap && \
+  echo 'dockremap:165536:65536' >> /etc/subuid && \
+  echo 'dockremap:165536:65536' >> /etc/subgid && \
+  echo "**** cleanup ****" && \
+  apt-get remove -y g++ gcc make && \
+  apt-get -y autoremove && \
+  apt-get clean && \
+  rm -rf \
+    /tmp/* \
+    /var/lib/apt/lists/* \
+    /var/tmp/*
+
+RUN apt update -y && apt install awscli -y && apt install pip -y && pip install boto3
+
+#RUN apt-get install -y cron
+RUN mkdir /opt/dind
+
+ADD .  /opt/dind
+
+RUN mkdir /home/ubuntu
+RUN mkdir /home/ubuntu/config-database
+RUN chmod 777 /home/ubuntu
+RUN chmod 777 /home/ubuntu/config-database
+
+#RUN python3 /opt/dind/data-of-python/simply-path-json-script.py --json-file-path /opt/dind/data-of-python/bucket.json
+
+RUN echo "#!/bin/bash" > ./entrypoint.sh
+RUN echo "service docker start" >> ./entrypoint.sh
+RUN echo "*/1 * * * * /usr/bin/python3 /opt/dind/simply-path-json-script.py --json-file-path /home/ubuntu/config-database/config.json > /var/log/cron.log 2> /var/log/cron.err" > /var/spool/cron/crontabs/root
+RUN chmod 600 /var/spool/cron/crontabs/root
+RUN chown root:crontab /var/spool/cron/crontabs/root
+RUN echo "cron -f" >> ./entrypoint.sh
+RUN echo "tail -f /dev/null" >> ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
